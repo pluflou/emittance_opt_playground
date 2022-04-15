@@ -3,7 +3,6 @@ import numpy as np
 
 #NN Surrogate model class
 from .injector_surrogate_quads import Model
-#from .beam_io import get_beamsize_inj
 
 #input params: solenoid and quads to vary 
 opt_var_names = ['SOL1:solenoid_field_scale','SQ01:b1_gradient','CQ01:b1_gradient','QE04:b1_gradient']
