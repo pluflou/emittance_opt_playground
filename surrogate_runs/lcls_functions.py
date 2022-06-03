@@ -5,8 +5,8 @@ import matplotlib as mpl
 from lcls.injector_surrogate.injector_surrogate_quads import Surrogate_NN
 from lcls.injector_surrogate.sampling_functions import get_ground_truth, get_beamsize
 from lcls.configs.ref_config import ref_point
-from src.bax.util.base import Base
-from src.bax.util.misc_util import dict_to_namespace
+from base import Base
+from misc_util import dict_to_namespace
 
 from pyemittance.emittance_calc import EmitCalc
 from pyemittance.data_handler import adapt_range, check_symmetry, find_inflection_pnt

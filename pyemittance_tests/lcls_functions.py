@@ -2,15 +2,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
-from src.lcls.injector_surrogate.injector_surrogate_quads import Surrogate_NN
-from src.lcls.injector_surrogate.sampling_functions import get_ground_truth, get_beamsize
-from src.lcls.configs.ref_config import ref_point
-from src.bax.util.base import Base
-from src.bax.util.misc_util import dict_to_namespace
+from lcls.injector_surrogate.injector_surrogate_quads import Surrogate_NN
+from lcls.injector_surrogate.sampling_functions import get_ground_truth, get_beamsize_3d
+from lcls.configs.ref_config import ref_point
+from base import Base
+from misc_util import dict_to_namespace
 
 from pyemittance.emittance_calc import EmitCalc
 from pyemittance.data_handler import adapt_range, check_symmetry, find_inflection_pnt
 
+get_beamsize=get_beamsize_3d
 
 class Lcls(Base):
     """Class for LCLS functions."""
@@ -64,16 +65,16 @@ class Lcls(Base):
     def set_surrogate_model(self, params):
         """Set self.surrogate_model."""
         self.surrogate_model = Surrogate_NN(
-            model_info_file = 'src/lcls/configs/model_info.json',
-            pv_info_file = 'src/lcls/configs/pvinfo.json',
+            model_info_file = 'lcls/configs/model_info.json',
+            pv_info_file = 'lcls/configs/pvinfo.json',
         )
         self.surrogate_model.load_saved_model(
-            model_path = 'src/lcls/models/',
+            model_path = 'lcls/models/',
             model_name = 'model_OTR2_NA_rms_emit_elu_2021-07-27T19_54_57-07_00',
         )
         self.surrogate_model.load_scaling(
-            scalerfilex = 'src/lcls/data/transformer_x.sav',
-            scalerfiley = 'src/lcls/data/transformer_y.sav',
+            scalerfilex = 'lcls/data/transformer_x.sav',
+            scalerfiley = 'lcls/data/transformer_y.sav',
         )
         self.surrogate_model.take_log_out = False
 

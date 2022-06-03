@@ -96,3 +96,32 @@ def get_beamsize(Model, ref_point, varx, vary, varz, var1, var2, var3, var4, var
         y_rms = y_out[:,1][0]
 
         return np.array([x_rms, y_rms])
+    
+def get_beamsize_3d(Model, ref_point, varx, vary, varz, varscan, use_lcls=False):
+    '''Returns the beamsize (xrms, yrms) prediction [m] from the surrogate model
+    for given settings of SOL1, SQ01, CQ01 and scanning quad QE04 '''
+    opt_var_names = ['SOL1:solenoid_field_scale','SQ01:b1_gradient','CQ01:b1_gradient','QE04:b1_gradient']
+    
+    if use_lcls:
+        # Use function from beam_io
+        beamsizes_arr = get_beamsize_inj([varx, vary, varz], varscan)
+        return beamsizes_arr
+    else:
+        # Use surrogate model
+        #convert to machine units
+        ref_point = Model.sim_to_machine(np.asarray(ref_point))
+        #make input array of length model_in_list (inputs model takes)
+        x_in = np.empty((1,len(Model.model_in_list)))
+        #fill in reference point around which to optimize
+        x_in[:,:] = np.asarray(ref_point[0])
+        #set solenoid, SQ, CQ to values from optimization step
+        x_in[:, Model.loc_in[opt_var_names[0]]] = varx
+        x_in[:, Model.loc_in[opt_var_names[1]]] = vary
+        x_in[:, Model.loc_in[opt_var_names[2]]] = varz
+        #set quad 525 to values for scan
+        x_in[:, Model.loc_in[opt_var_names[3]]] = varscan
+        #output predictions
+        y_out = Model.pred_machine_units(x_in)
+        x_rms = y_out[:,0][0]
+        y_rms = y_out[:,1][0]
+        return np.array([x_rms, y_rms])
