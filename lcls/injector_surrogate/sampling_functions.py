@@ -203,8 +203,7 @@ def get_match_emittance_from_scan(config: list, eval_fn=evaluate):
                                       config=config,
                                       quad_init=[-7,-4,-1,2],
                                       num_points=5,
-                                      calc_bmag=True,
-                                      show_plots=True)
+                                      calc_bmag=True)
 
     # return match*emittance
     return out_dict["nemit"], out_dict["nemit_err"], out_dict["bmag_emit"], out_dict["bmag_emit_err"]
