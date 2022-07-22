@@ -82,9 +82,7 @@ def objective(y_out, Model):
     out["sigma_x"] = y_out[:,Model.loc_out["sigma_x"]] #grab sigma_x out of the model 
     out["sigma_y"] = y_out[:,Model.loc_out["sigma_y"]] #grab sigma_y out of the model 
         
-    return  out
-    
-    
+    return out
 
 def get_ground_truth(Model,ref_point,varx,vary,varz,var1,var2,var3,var4,var5,var6):
     """Returns normalized emittance prediction from the surrogate model
@@ -196,3 +194,17 @@ def get_beamsize_3d(Model, ref_point, varx, vary, varz, varscan, use_lcls=False)
         x_rms = y_out[:,0][0]
         y_rms = y_out[:,1][0]
         return np.array([x_rms, y_rms])
+
+def get_match_emittance_from_scan(config: list, eval_fn=evaluate):
+    """Config here is 8D, all model inputs except the scanning quad QE04"""
+    from pyemittance.emit_eval_example import eval_emit_surrogate
+
+    out_dict, _ = eval_emit_surrogate(get_bs_model=eval_fn,
+                                      config=config,
+                                      quad_init=[-7,-4,-1,2],
+                                      num_points=5,
+                                      calc_bmag=True,
+                                      show_plots=True)
+
+    # return match*emittance
+    return out_dict["nemit"], out_dict["nemit_err"], out_dict["bmag_emit"], out_dict["bmag_emit_err"]

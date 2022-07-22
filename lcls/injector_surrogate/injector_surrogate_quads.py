@@ -89,7 +89,7 @@ class Surrogate_NN:
     def pred_sim_units(self, x):
     
             x = self.transformer_x.transform(x)
-            y = self.model_1.predict(x)
+            y = self.model_1(x)
             y = self.transformer_y.inverse_transform(y)
 
             if self.take_log_out == True:
@@ -111,7 +111,7 @@ class Surrogate_NN:
             #scale for NN pred
             
             x_s =  self.transformer_x.transform(x_s)
-            y = self.model_1.predict(x_s)
+            y = self.model_1(x_s)
             y = self.transformer_y.inverse_transform(y)
             
             if self.take_log_out == True:
@@ -122,7 +122,7 @@ class Surrogate_NN:
             
     def pred_raw_units(self, x):
     
-            y = self.model_1.predict(x)
+            y = self.model_1(x)
 
             return y
 
@@ -145,7 +145,6 @@ class Surrogate_NN:
     ## functions to convert between sim and machine units for data
     def sim_to_machine(self,sim_vals):
         pv_vals = np.copy(sim_vals)
-
         for i in range(0,len(self.model_in_list)):
             pv_vals[:,self.loc_in[self.model_in_list[i]]]=np.asarray(sim_vals)[:,self.loc_in[self.model_in_list[i]]]/self.pv_to_sim_factor[self.sim_name_to_pv_name[self.model_in_list[i]]]
 
