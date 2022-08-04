@@ -201,7 +201,7 @@ def get_match_emittance_from_scan(config: list, eval_fn=evaluate):
 
     out_dict, _ = eval_emit_surrogate(get_bs_model = eval_fn,
                                       config = config,
-                                      quad_init = [-7,-5,-4,-3,-2,-1,0],
+                                      quad_init = [-7,-5,-4,-3,-2,-1],
                                       num_points = 7,
                                       adapt_ranges = True,
                                       check_sym = True,
