@@ -199,7 +199,7 @@ def get_match_emittance_from_scan(config: list, eval_fn=evaluate):
     """Config here is 8D, all model inputs except the scanning quad QE04"""
     from pyemittance.emit_eval_example import eval_emit_surrogate
 
-    out_dict, _ = eval_emit_surrogate(get_bs_model = eval_fn,
+    out_dict = eval_emit_surrogate(get_bs_model = eval_fn,
                                       config = config,
                                       quad_init = [-7,-5,-4,-3,-2,-1],
                                       num_points = 7,
