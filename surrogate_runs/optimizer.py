@@ -50,10 +50,11 @@ class Opt:
         quad_init = self.varscan
         config = [varx, vary, varz]
 
-        out_dict, self.total_num_points = eval_emit_surrogate(
+        out_dict = eval_emit_surrogate(
             self.get_beamsizes_model,
-            config,
+            inj_config=config,
             quad_init=list(quad_init),
+            config_name='sim',
             adapt_ranges=True,
             num_points=self.num_points_adapt,
             check_sym=True,
@@ -63,6 +64,7 @@ class Opt:
             add_noise=self.noise,
         )
 
+        self.total_num_points = out_dict['total_points_measured']
         return out_dict
 
     def evaluate_bo(self, varx, vary, varz):
@@ -70,14 +72,14 @@ class Opt:
 
         emit = out_dict['nemit']
         emit_err = out_dict['nemit_err']
-        bmagx, bmagx_err = ef.out_dict['bmagx'], ef.out_dict['bmagx_err']
-        bmagy, bmagy_err = ef.out_dict['bmagy'], ef.out_dict['bmagy_err']    
+        bmagx, bmagx_err = out_dict['bmagx'], out_dict['bmagx_err']
+        bmagy, bmagy_err = out_dict['bmagy'], out_dict['bmagy_err']    
 
         if np.isnan(emit):
             print("NaN emit")
             return np.nan, np.nan
         
-        bmag = np.sqrtbmagx*bmagy)
+        bmag = np.sqrt(bmagx*bmagy)
 
         if emit_err / emit < self.uncertainty_lim:
             # save total number of points added

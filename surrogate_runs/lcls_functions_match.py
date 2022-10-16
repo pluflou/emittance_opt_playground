@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 from lcls.injector_surrogate.injector_surrogate_quads import Surrogate_NN
-from lcls.injector_surrogate.sampling_functions import get_ground_truth, get_beamsize_3d
+from lcls.injector_surrogate.sampling_functions import get_ground_truth, get_beamsize
 from lcls.configs.ref_config import ref_point
 from base import Base
 from misc_util import dict_to_namespace
@@ -11,7 +11,8 @@ from misc_util import dict_to_namespace
 from pyemittance.emittance_calc import EmitCalc
 from pyemittance.data_handler import adapt_range, check_symmetry, find_inflection_pnt
 
-get_beamsize = get_beamsize_3d
+# TODO: implementation of matching quads not fully done for BAX
+
 class Lcls(Base):
     """Class for LCLS functions."""
 
@@ -26,16 +27,10 @@ class Lcls(Base):
         self.set_surrogate_model(params)
         self.params.energy = getattr(params, 'energy', 0.135)
         self.params.reference_point = getattr(params, 'reference_point', ref_point)
-        self.params.calc_bmag = getattr(params, 'calc_bmag', False)
         self.add_noise = False
         print("Add noise: ", self.add_noise)
         self.noise_red = 5000000
         self.params.verbose = False
-        
-    def set_noise(self, noise, on=False):
-        self.noise_perc = noise
-        self.add_noise = on
-        print(f"Add noise: ", self.add_noise, self.noise_perc)
 
     def set_bounds(self, params):
         """Set bounds for config, quad, and emit."""
@@ -88,33 +83,34 @@ class Lcls(Base):
         Given config_quad (a list containing three config variables and one quad
         measurement, all floats), return beamsizes (a tuple of two floats).
         """
+        if verbose:
+            bar_str = '=====' * 20 + '\n'
+            print(bar_str + f'* Calling get_beamsize function on {config_quad}\n')
 
         beamsizes = get_beamsize(
             self.surrogate_model,
             self.params.reference_point,
-            config_quad[0],
-            config_quad[1],
-            config_quad[2],
-            config_quad[3],
+            config_quad[0], # SOL
+            config_quad[1], # CQ
+            config_quad[2], # SQ
+            config_quad[3], # QA1
+            config_quad[4], # QA2
+            config_quad[5], # Q01
+            config_quad[6], # Q01
+            config_quad[7], # Q01
+            config_quad[8]  # Q04
         )
-
-        if self.add_noise and self.noise_perc is not None:
-            print("noise on ", self.noise_perc)
-            xnoise = np.random.normal(0,self.noise_perc)
-            ynoise = np.random.normal(0,self.noise_perc)
-            
-            print("added ", xnoise * beamsizes[0])
-            
-            xrms = beamsizes[0] + xnoise * beamsizes[0]
-            yrms = beamsizes[1] + ynoise * beamsizes[1]
+        
+        if self.add_noise:
+            rand_sign = (-1)**np.random.randint(1,10)
+            xrms = beamsizes[0] + rand_sign*np.random.uniform(0.29/100, 0.6/100)*beamsizes[0] # adding around 0.5%
+            rand_sign = (-1)**np.random.randint(1,10)
+            yrms = beamsizes[1] + rand_sign*np.random.uniform(0.29/100, 0.6/100)*beamsizes[1]
             
             beamsizes = (float(xrms), float(yrms))
         else:
             beamsizes = (float(beamsizes[0]), float(beamsizes[1]))
-
-        #if verbose:
-            #print(f'* Beamsizes = {beamsizes}\n' + bar_str, flush=True)
-
+        
         return beamsizes
 
     def beamsizes_list_fn(self, config, quad_list, verbose=True):
@@ -133,9 +129,9 @@ class Lcls(Base):
         list of quad measurement floats), and beamsize_x_list, beamsize_y_list (each a
         list of beamsize floats).
         """
-        # Set xerr and yerr as 5% noise on beamsizes
-        xerr = list(np.array(beamsize_x_list) * 0.03)
-        yerr = list(np.array(beamsize_y_list) * 0.03)
+        # Set xerr and yerr as % noise on beamsizes
+        xerr = list(np.array(beamsize_x_list) * 0.015)
+        yerr = list(np.array(beamsize_y_list) * 0.025)
 
         # NOTE: should do the following truncation *outside* of this emittance_fn.
         #quad_x_list, beamsize_x_list, xerr = self.get_inflection_truncated_quad_bs_list(
@@ -153,7 +149,7 @@ class Lcls(Base):
         )
         ef.plot = False
         ef.save_runs = False
-        ef.calc_bmag = True if self.params.calc_bmag else False
+        ef.calc_bmag = True
 
         # Get normalized transverse emittance and geometric mean
         ef.get_emit()
@@ -161,19 +157,19 @@ class Lcls(Base):
 
         emitx, emitxerr = ef.out_dict['nemitx'], ef.out_dict['nemitx_err']
         emity, emityerr = ef.out_dict['nemity'], ef.out_dict['nemity_err']
-        bmagx, bmagx_err = ef.out_dict['bmagx'], ef.out_dict['bmagx_err']
-        bmagy, bmagy_err = ef.out_dict['bmagy'], ef.out_dict['bmagy_err']
 
         if np.isnan(emitx) or np.isnan(emity):
             emitx, emity = np.nan, np.nan
             #print("NaN emit")
 
         # If error greater than err_thresh * emittance (in x or y), set emittance to np.nan
-        err_thresh = 0.7 #0.25
+        err_thresh = 0.25
         if emitxerr > emitx * err_thresh or emityerr > emity * err_thresh:
             emitx, emity = np.nan, np.nan
+            
+        bmagx, bmagy = ef.out_dict['bmagx'], ef.out_dict['bmagy']
 
-        return emitx, emity, bmagx, bmagy
+        return emitx, emity #emitx*bmagx, emity*bmagy
 
     def full_emittance_fn(self, config, quad_x_list, quad_y_list, verbose=True):
         """
@@ -195,17 +191,7 @@ class Lcls(Base):
 
     def emittance_scalar_fn(self, emittance_tuple):
         """Return emittance scalar from tuple via geometric mean."""
-        emit_geo_mean = np.sqrt(emittance_tuple[0] * emittance_tuple[1])
-
-        # if self.params.calc_bmag:
-        #     bmag_geo_mean = np.sqrt(emittance_tuple[2] * emittance_tuple[3])
-        #     emittance_scalar = emit_geo_mean * bmag_geo_mean
-        # else:
-        #     emittance_scalar = emit_geo_mean
-        
-        # EDIT TO CHECK SOMETHING
-        emittance_scalar = emit_geo_mean
-
+        emittance_scalar = np.sqrt(emittance_tuple[0] * emittance_tuple[1])
         return emittance_scalar
 
     def get_inflection_truncated_quad_bs_list(self, quad_list, bs_list, err_list=None):
@@ -324,7 +310,7 @@ class Lcls(Base):
         beamsizes_list = self.beamsizes_list_fn(config, quad_list)
         beamsizes_list_norm = [self.normalize_beamsizes(bs) for bs in beamsizes_list]
         return beamsizes_list_norm
-
+    
     def emittance_fn_norm(
         self, quad_x_list, quad_y_list, beamsize_x_list, beamsize_y_list
     ):

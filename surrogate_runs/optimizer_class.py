@@ -5,7 +5,7 @@ from bayes_opt import BayesianOptimization, UtilityFunction
 from scipy import optimize
 
 from pyemittance.emit_eval_example import eval_emit_surrogate
-from lcls_functions import Lcls
+from lcls_functions_match import Lcls
 
 class Opt:
     def __init__(self, init_scan=np.linspace(-6, 0, 10), bsfn=None):
@@ -58,7 +58,7 @@ class Opt:
         quad_init = self.varscan
         config = [varx, vary, varz, var1, var2, var3, var4, var5]
 
-        out_dict, self.total_num_points = eval_emit_surrogate(
+        out_dict = eval_emit_surrogate(
             self.get_beamsizes_model,
             config,
             quad_init=list(quad_init),
@@ -70,7 +70,7 @@ class Opt:
             show_plots=self.plot,
             calc_bmag=True,
         )
-
+        self.total_num_points = out_dict['total_points_measured']
         return out_dict
 
     def evaluate_bo(self, varx, vary, varz, var1, var2, var3, var4, var5):
